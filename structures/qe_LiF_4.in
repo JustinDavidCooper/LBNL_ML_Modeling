@@ -1,0 +1,99 @@
+&control
+    calculation='scf',
+    prefix='LiF.opt.xyz',
+    pseudo_dir='/global/home/users/asanzmatias/codes/mbxas/XCH_pseudos/',
+    outdir='./',
+    wf_collect =.TRUE.,
+    restart_mode='from_scratch',
+    tstress=.true., tprnfor=.true.
+/
+&system
+    ibrav=1 , a=8.201
+    nat=64, ntyp=2, tot_charge=0,
+    nbnd=153, occupations='smearing', smearing='fd', degauss=0.0019,
+    ecutwfc =25, ecutrho=200,
+    
+    
+/
+&electrons
+    diagonalization='david'
+    conv_thr=1.0d-8,
+    mixing_beta=0.3,
+    mixing_mode='local-TF',
+    electron_maxstep=200,
+    diago_thr_init=,
+            diago_full_acc=.false.,
+    startingpot='atomic',
+            mixing_fixed_ns=0
+/
+ATOMIC_SPECIES
+F 18.998 F.pbe-van-dgp-asm.UPF
+Li 6.941 Li.pbe-van-yufengl.UPF
+ATOMIC_POSITIONS angstrom
+Li 1.439 5.696  7.555
+Li 1.267 5.578  3.452
+Li 1.387 7.869  1.394
+Li 1.382 7.941  5.211
+Li 1.391 1.551  7.503
+Li 1.419 1.567  3.397
+Li 1.314 3.574  1.380
+Li 1.215 3.490  5.573
+Li 3.297 5.411  1.272
+Li 3.401 5.515  5.451
+Li 3.248 7.492  7.428
+Li 3.285 7.466  3.323
+Li 3.369 1.516  1.398
+Li 3.478 1.584  5.549
+Li 3.339 3.364  7.580
+Li 3.225 3.567  3.632
+Li 5.500 5.665  7.602
+Li 5.462 5.703  3.295
+Li 5.352 7.558  1.307
+Li 5.318 7.636  5.381
+Li 5.427 1.585  7.764
+Li 5.558 1.603  3.381
+Li 5.166 3.520  1.546
+Li 5.456 3.803  5.355
+Li 7.483 5.739  1.351
+Li 7.599 5.644  5.707
+Li 7.657 7.723  7.453
+Li 7.373 7.673  3.633
+Li 7.477 1.287  1.290
+Li 7.440 1.663  5.541
+Li 7.366 3.599  7.668
+Li 7.378 3.728  3.454
+F 1.348 5.594  1.392
+F 1.279 5.710  5.504
+F 1.388 7.738  7.632
+F 1.415 7.729  3.384
+F 1.298 1.629  1.406
+F 1.437 1.534  5.557
+F 1.274 3.456  7.473
+F 1.378 3.594  3.450
+F 3.337 5.494  7.531
+F 3.334 5.615  3.532
+F 3.366 7.634  1.443
+F 3.254 7.755  5.535
+F 3.507 1.528  7.609
+F 3.422 1.711  3.224
+F 3.303 3.563  1.369
+F 3.424 3.584  5.564
+F 5.375 5.683  1.349
+F 5.267 5.776  5.419
+F 5.249 7.645  7.598
+F 5.419 7.745  3.416
+F 5.470 1.702  1.371
+F 5.481 1.663  5.456
+F 5.442 3.694  7.590
+F 5.443 3.666  3.493
+F 7.512 5.748  7.539
+F 7.471 5.618  3.434
+F 7.361 7.809  1.340
+F 7.441 7.712  5.525
+F 7.474 1.572  7.621
+F 7.627 1.389  3.458
+F 7.536 3.628  1.248
+F 7.431 3.594  5.443
+K_POINTS automatic
+1 1 1  0 0 0
+
