@@ -10,57 +10,47 @@ Created on Tue Jun 20 11:24:43 2023
 import numpy as np
 import matplotlib.pyplot as plt
 
-from read_structures import GetRawData
-from preprocess import trim_data
-
-from preprocess import align_structures
-
-from tools import get_coulomb_potentials
-import sea_urchin.clustering.metrics as met
+from preprocess import standard_GetData
 
 import sklearn.preprocessing as prep
 
 from analyzer import HyperparamterAnalyzerRFR
+from sklearn.ensemble import RandomForestRegressor
 
+#%% Figure and Axis Containers
 
-#%%
+figs= {}
+axs= {}
 
-element= "CaF2"
-data= GetRawData(element, rec= False)
+#%% Init
 
-data= trim_data(data)
+par_Data= {
+    'element' : 'CaF2',
+    'rec' : False,
+    'e_cutoff' : None
+    }
+predictors= [
+    'distances',
+    'inv_distances',
+    'energies'
+    # 'forces'
+    ]
 
-#%% Allign structures
-
-clusters = align_structures(clusters= data['clusters'])
-
-#%% Extract Coulomb Potentials and Distances
-
-data['energies']= get_coulomb_potentials(clusters)
-data['distances']= met.get_distances(clusters)
-data['inv_distances']= 1/data['distances']
+data= standard_GetData(predictors, **par_Data)
 
 #%% Scaling
 
-scaler= {
-    'spectras' : prep.StandardScaler(),
-    'distances'      : prep.StandardScaler(),
-    'inv_distances'   : prep.StandardScaler(),
-    'energies' :prep.StandardScaler()
-    }
+scaler= {key:prep.StandardScaler() for key in predictors}
+scaler['nspectras']= prep.StandardScaler()
 
-data_scaled= {
-    'spectras' : scaler['spectras'].fit_transform(data['nspectras']),
-    'distances'      : scaler['distances'].fit_transform(data['distances']),
-    'inv_distances'   : scaler['inv_distances'].fit_transform(1/data['distances']),
-    'energies' : scaler['energies'].fit_transform(data['energies'])
-    }
+data_scaled= { key:scaler[key].fit_transform(data[key]) for key in predictors }
+data_scaled['nspectras']= scaler['nspectras'].fit_transform(data['nspectras'])
 
 #%% RFR Parameters
 
 par_RFR= {
     'max_features'   :'sqrt',
-    # 'oob_score'      : True, #### HyperparameterAnalyzerRFR defaults to use OOB score ####
+    'oob_score'      : True,
     # 'max_leaf_nodes' : None,
     'random_state'   : 87
     }
@@ -68,39 +58,54 @@ par_RFR= {
 #%% Data Splitting
 
 #### For Clarity In Model Fitting ####
-X= {'distances'     : data['distances'],
-    'inv_distances' : data['inv_distances'],
-    'energies'      : data['energies']
-    }
-y= {'all' : data_scaled['spectras'] }
+X= { key: data[key] for key in predictors }
+y= {'all' : data['nspectras'] }
 
 #%% Tree Count analysis
 
-range_Tree_Counts= np.arange(50,200)
+range_Tree_Counts= np.arange(50,100)
 
 
-RF_analyzer_d= HyperparamterAnalyzerRFR(X['distances'], y['all'], par_RFR)
-RF_analyzer_invd= HyperparamterAnalyzerRFR(X['inv_distances'], y['all'], par_RFR)
-RF_analyzer_e= HyperparamterAnalyzerRFR(X['energies'], y['all'], par_RFR)
+analyzers= {key: HyperparamterAnalyzerRFR(X[key], y['all'], par_RFR) for key in predictors}
 
-history_RF_tc_d= RF_analyzer_d.run_tree_scores(range_Tree_Counts)
-history_RF_tc_invd= RF_analyzer_invd.run_tree_scores(range_Tree_Counts)
-history_RF_tc_e= RF_analyzer_e.run_tree_scores(range_Tree_Counts)
+histories= {key: analyzers[key].run_tree_scores(range_Tree_Counts) for key in predictors}
 
 #%% Plot Tree count convergence
 
-plt.figure()
-HyperparamterAnalyzerRFR.plot_summary(history_RF_tc_d, history_RF_tc_invd, history_RF_tc_e, labels= ['Distances', 'Inv_distances', 'Energies'])
+figs['1'], axs['1']= plt.subplots()
+HyperparamterAnalyzerRFR.plot_summary(histories)
 plt.legend()
 plt.xlabel('Tree Count')
 plt.ylabel('R^2')
 
+#%% Spectra Cutoff 
 
+range_spectra_end= np.arange(start= 11, stop= data['erange'][-1])
+scores= []
+for i in range(10):
+    temp= []
+    for endpoint in range_spectra_end:
+        par_RFR['random_state']+= 1
+        rf= RandomForestRegressor(**par_RFR)
+        rf.fit(
+            X= data['distances'],
+            y= data['nspectras'][:,data['erange'] <= endpoint]
+            )
+        temp.append(rf.oob_score_)
+    scores.append(temp)
+scores= np.array(scores)
 
+#%% Plot Spectra Cutoff convergence
 
+figs['2'], axs['2']= plt.subplots()
+for i in range(10):
+    plt.scatter(
+        range_spectra_end, scores[i,:], color= 'dodgerblue'
+        )
+plt.plot(range_spectra_end, np.mean(scores, axis= 0), label= 'Mean')
 
-
-
+plt.xlabel('Spectra Endpoint')
+plt.ylabel('OOB Score')
 
 
 

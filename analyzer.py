@@ -15,14 +15,16 @@ import matplotlib.pyplot as plt
 
 #%% Class
 class HyperparamterAnalyzerRFR:
-    def __init__(self, X, y, parameters= {'max_features' : 'sqrt', 'oob_score' : True, 'random_state' : 0 }):
-        self.X, self.y = unison_shuffle(X, y, seed= parameters['random_state'])
+    def __init__(self, X, y, parameters= {'max_features' : 'sqrt', 'oob_score' : True }):
+        # self.X, self.y = unison_shuffle(X, y, seed= parameters['random_state'])
+        self.X= X
+        self.y= y
         self.parameters= parameters
     
     def run_depth_scores(self, dRange, CV= None):
         scores= []
-        self.parameters['oob_score']=  CV == None
-        # print('Running Depths:')
+        if CV != None:
+            print("Cross-Validation not recommended evaluation method for Random Forest Models: Use OOB score")
         p= progressBar(dRange.shape[0])
         for d in dRange:
             rf = RandomForestRegressor(
@@ -48,7 +50,8 @@ class HyperparamterAnalyzerRFR:
     
     def run_tree_scores(self, tree_sizes, CV= None):
         scores= []
-        self.parameters['oob_score']=  CV == None 
+        if CV != None:
+            print("Cross-Validation not recommended evaluation method for Random Forest Models: Use OOB score")
         p= progressBar(len(tree_sizes))
         for size in tree_sizes:
             p.tick()
@@ -73,14 +76,19 @@ class HyperparamterAnalyzerRFR:
         
         return summary
 
-    def plot_summary(*summaries, labels):
-        for i, summary in enumerate(summaries):
+    def plot_summary(summaries:dict):
+        optima= []
+        for key, summary in summaries.items():
             if 'tree_sizes' in summary:
-                plt.plot(summary['tree_sizes'],summary['scores'], label= labels[i])
+                plt.plot(summary['tree_sizes'],summary['scores'], label= key)
+                optima.append([summary['t_opt'], summary['score_opt']])
+            elif 'depths' in summaries[key]:
+                plt.plot(summaries[key]['depths'],summaries[key]['scores'], label= key)
+                optima.append([summary['d_opt'], summary['score_opt']])
             else:
-                plt.plot(summary['depths'],summary['scores'], label= labels[i])
-        
-        plt.scatter([summary['t_opt'] if 't_opt' in summary else summary['d_opt'] for summary in summaries], [summary['score_opt'] for summary in summaries], color= 'red', label= 'Max')
+                raise RuntimeError("{} is not an implemented summarytype".format(key))
+        optima= np.array(optima)
+        plt.scatter(optima[:,0], optima[:,1], color= 'red', label= 'Max')
 
 
 

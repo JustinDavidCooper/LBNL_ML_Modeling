@@ -8,6 +8,7 @@ Created on Fri Jun 16 11:59:35 2023
 #%% IMPORTS
 
 import numpy as np
+import sea_urchin.clustering.metrics as met
 
 #%% DEFS
 def unison_shuffle(a,b, seed = 42):
@@ -36,7 +37,7 @@ class progressBar:
         # print('', end= '\033[F')
         self.show()
 
-def get_coulomb_potential(cluster):
+def get_potential_energy(cluster):
     charge={
         'Ca' : 2,
         'F'  : -1,
@@ -52,9 +53,41 @@ def get_coulomb_potential(cluster):
     
     indecies = np.triu_indices(len(cluster), k=1)
     return energies[indecies]
+   
 
-def get_coulomb_potentials(clusters):
-    return np.array([get_coulomb_potential(cluster) for cluster in clusters])
+def get_electrostatic_force(cluster):
+    charge={
+        'Ca' : 2,
+        'F'  : 1,
+        'Zn' : 2,
+        'K'  : 1,
+        'Li' : 1,
+        'Mg' : 2,
+        'Na' : 1
+        }
+    r= cluster.get_all_distances()
+    charges= np.array([[charge[symbol] for symbol in cluster.get_chemical_symbols()]])
+    forces= charges * charges.T / ( r**2 )
+    
+    indecies = np.triu_indices(len(cluster), k=1)
+    return forces[indecies]
+
+def get_potential_energies(clusters):
+    return np.array([get_potential_energy(cluster) for cluster in clusters])
+
+def get_electrostatic_forces(clusters):
+    return np.array([get_electrostatic_force(cluster) for cluster in clusters])
+
+def get_predictor(predictor: str, clusters):
+    match predictor:
+        case 'distances':
+            return met.get_distances(clusters)
+        case 'inv_distances':
+            return 1/met.get_distances(clusters)
+        case 'energies':
+            return get_potential_energies(clusters)
+        case 'forces':
+            return get_electrostatic_forces(clusters)
 
 #%%
 
